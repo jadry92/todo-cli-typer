@@ -4,7 +4,7 @@ from to_do.db import Database
 from to_do import DB_ERROR, DATA_ERROR, SUCCESS
 
 
-class ToDo():
+class ToDo:
     def __init__(self) -> None:
         self.db = Database()
         self.id = None
@@ -33,12 +33,7 @@ class ToDo():
         INSERT INTO to_do (name, date, done_by, done)
         VALUES(?, ?, ?, ?);
         """
-        data = (
-            self.name,
-            self.created,
-            self.done_by,
-            self.done
-        )
+        data = (self.name, self.created, self.done_by, self.done)
 
         result = self.db.insert(sql, data)
         if result == SUCCESS:
@@ -62,18 +57,20 @@ class ToDo():
         return self.db.execute(sql)
 
     def one(self, todo_id: int):
-        return self.db.query(f"SELECT * FROM to_do WHERE id = {todo_id}", all=False)
+        return self.db.query(
+            f"SELECT * FROM to_do WHERE id = {todo_id}", all_data=False
+        )
 
     def all(self):
-        return self.db.query("SELECT * FROM to_do ORDER BY done_by", all=True)
+        return self.db.query("SELECT * FROM to_do ORDER BY done_by", all_data=True)
 
     def init_db(self):
         self.db.create_schema()
         self.db.commit()
         return SUCCESS
 
-    def filter(self, patter: str = ''):
-        if patter == '':
+    def filter(self, patter: str = ""):
+        if patter == "":
             return DATA_ERROR
         sql = f"SELECT * FROM to_do WHERE {patter}"
-        return self.db.query(sql, all=True)
+        return self.db.query(sql, all_data=True)

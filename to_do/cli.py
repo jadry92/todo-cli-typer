@@ -1,21 +1,21 @@
+"""
+This module is the entry point of the cli application
+"""
+
 # Libraries
-import typer
 from typing import Optional
-from rich.console import Console
-from rich.style import Style
-from rich.theme import Theme
 from datetime import datetime
+from rich.console import Console
+from rich.theme import Theme
 from rich.table import Table
+import typer
+
 # Local
 from to_do.To_Do import ToDo
 from to_do.db import Database
 from to_do import __app_name__, __version__, SUCCESS, ERRORS, ERROR
 
-custom_theme = Theme({
-    "info": "dim cyan",
-    "warning": "magenta",
-    "danger": "bold red"
-})
+custom_theme = Theme({"info": "dim cyan", "warning": "magenta", "danger": "bold red"})
 
 console = Console(theme=custom_theme)
 app = typer.Typer()
@@ -33,14 +33,15 @@ def _parser_date(value):
             date = datetime.strptime(value, "%d/%m/%Y")
             print(date)
             return date
-        except ValueError:
+        except ValueError as error:
             console.log(
-                ":loudly_crying_face: the format has to be DD/MM/YYYY", style="danger")
-            raise typer.Exit(1)
+                ":loudly_crying_face: the format has to be DD/MM/YYYY", style="danger"
+            )
+            raise typer.Exit(1) from error
 
 
 @app.callback()
-def main(
+def callback(
     context: typer.Context,
     version: Optional[bool] = typer.Option(
         None,
@@ -48,14 +49,18 @@ def main(
         "-v",
         help="show the cli version",
         callback=_version_callback,
-        is_eager=True
-    )
+        is_eager=True,
+    ),
 ):
+    """This function is call before any command"""
     context.obj = Database()
+    if version:
+        console.print(f"{__app_name__} v{__version__}")
 
 
 @app.command()
 def init(context: typer.Context):
+    """This command initialize the database"""
     todo = ToDo()
     response = todo.init_db()
     return response
@@ -63,11 +68,14 @@ def init(context: typer.Context):
 
 @app.command()
 def show():
+    """This command show all to do"""
     todo = ToDo()
     data = todo.all()
     if data == []:
         console.log(
-            f":sad_but_relieved_face: No Data Found :sad_but_relieved_face:", style="waring")
+            ":sad_but_relieved_face: No Data Found :sad_but_relieved_face:",
+            style="waring",
+        )
     keys = data[0].keys()
     table = Table(title="To Do")
     for key in keys:
@@ -80,38 +88,42 @@ def show():
 @app.command()
 def create(
     name: str,
-    done_by=typer.Option(...,
-                         help="format DD/MM/YYYY", prompt="format DD/MM/YYYY", callback=_parser_date)
+    done_by=typer.Option(
+        ..., help="format DD/MM/YYYY", prompt="format DD/MM/YYYY", callback=_parser_date
+    ),
 ):
+    """This command create a new to do"""
     todo = ToDo()
     result = todo.create(name, done_by)
     if result == SUCCESS:
         todo.save()
         console.log(
-            ":white_heavy_check_mark: data was successfully saved :white_heavy_check_mark:", style="info")
+            ":white_heavy_check_mark: data was successfully saved :white_heavy_check_mark:",
+            style="info",
+        )
     else:
-        console.log(
-            f":cross_mark: {ERRORS[result]} :cross_mark:", style="danger")
+        console.log(f":cross_mark: {ERRORS[result]} :cross_mark:", style="danger")
         return ERROR
 
 
 @app.command()
-def update(todo_id=typer.Argument(int),
-           name=typer.Option(''),
-           done_by=typer.Option('',
-                                help="format DD/MM/YYYY",
-                                callback=_parser_date),
-           done=typer.Option(None)):
+def update(
+    todo_id=typer.Argument(int),
+    name=typer.Option(""),
+    done_by=typer.Option("", help="format DD/MM/YYYY", callback=_parser_date),
+    done=typer.Option(None),
+):
+    """This command update a to do"""
     todo = ToDo()
     values = {}
-    if name != '':
-        values['name'] = name
+    if name != "":
+        values["name"] = name
     if done_by:
-        values['done_by'] = done_by
+        values["done_by"] = done_by
     if done:
-        values['done'] = done
+        values["done"] = done
 
-    if not len(values):
+    if len(values) == 0:
         console.log("no values to be update", style="warning")
         raise typer.Exit(1)
 
@@ -120,22 +132,25 @@ def update(todo_id=typer.Argument(int),
     if result == SUCCESS:
         todo.save()
         console.log(
-            ":white_heavy_check_mark: data was successfully updated :white_heavy_check_mark:", style="info")
+            ":white_heavy_check_mark: data was successfully updated :white_heavy_check_mark:",
+            style="info",
+        )
     else:
-        console.log(
-            f":cross_mark: {ERRORS[result]} :cross_mark:", style="danger")
-        return ERROR
+        console.log(f":cross_mark: {ERRORS[result]} :cross_mark:", style="danger")
+        raise typer.Exit(1)
 
 
 @app.command()
 def delete(todo_id):
+    """This command delete a to do"""
     todo = ToDo()
     result = todo.delete(todo_id)
     if result == SUCCESS:
         todo.save()
         console.log(
-            f":white_heavy_check_mark: The todo {todo_id} has been delete :white_heavy_check_mark:", style="info")
+            f":white_heavy_check_mark: The todo {todo_id} has been delete :white_heavy_check_mark:",
+            style="info",
+        )
     else:
-        console.log(
-            f":cross_mark: {ERRORS[result]} :cross_mark:", style="danger")
-        return ERROR
+        console.log(f":cross_mark: {ERRORS[result]} :cross_mark:", style="danger")
+        raise typer.Exit(1)
