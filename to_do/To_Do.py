@@ -1,10 +1,19 @@
+"""
+This module contains the ToDo class.
+"""
+# libraries
 from datetime import datetime
-from typing import List
+
+# Local
 from to_do.db import Database
-from to_do import DB_ERROR, DATA_ERROR, SUCCESS
+from to_do import DATA_ERROR, SUCCESS
 
 
 class ToDo:
+    """
+    This class define the CRUD operations for the a To Do
+    """
+
     def __init__(self) -> None:
         self.db = Database()
         self.id = None
@@ -20,6 +29,9 @@ class ToDo:
         return SUCCESS
 
     def create(self, name: str, done_by: datetime):
+        """
+        This method create a new To Do
+        """
         self.id = None
         self.name = name
         self.done_by = done_by
@@ -42,34 +54,55 @@ class ToDo:
         return result
 
     def save(self):
+        """
+        This method save the changes in the database
+        """
         self.db.commit()
 
     def delete(self, todo_id) -> int:
+        """
+        This method delete a To Do
+        """
         return self.db.execute(f"DELETE FROM to_do WHERE id = {todo_id};")
 
     def update(self, todo_id, *args, **kwargs) -> int:
+        """
+        This method update a To Do
+        """
         values = []
         if kwargs:
-            for key in kwargs.keys():
-                values.append(f"{key} = '{kwargs[key]}'")
+            for key, row in kwargs.items():
+                values.append(f"{key} = '{row}'")
 
         sql = f"UPDATE to_do SET {','.join(values)} WHERE id = {todo_id};"
         return self.db.execute(sql)
 
     def one(self, todo_id: int):
+        """
+        this method return a single To Do base on the id
+        """
         return self.db.query(
             f"SELECT * FROM to_do WHERE id = {todo_id}", all_data=False
         )
 
     def all(self):
+        """
+        This method return all To Do
+        """
         return self.db.query("SELECT * FROM to_do ORDER BY done_by", all_data=True)
 
     def init_db(self):
+        """
+        This method initialize the database with base schema
+        """
         self.db.create_schema()
         self.db.commit()
         return SUCCESS
 
     def filter(self, patter: str = ""):
+        """
+        This method return all To Do that match the patter
+        """
         if patter == "":
             return DATA_ERROR
         sql = f"SELECT * FROM to_do WHERE {patter}"

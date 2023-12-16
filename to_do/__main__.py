@@ -1,4 +1,5 @@
 """This file is the entry point of the application"""
+
 from to_do import cli, __app_name__
 
 

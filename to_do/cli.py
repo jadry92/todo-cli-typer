@@ -5,25 +5,20 @@ This module is the entry point of the cli application
 # Libraries
 from typing import Optional
 from datetime import datetime
-from rich.console import Console
-from rich.theme import Theme
 from rich.table import Table
 import typer
 
 # Local
 from to_do.To_Do import ToDo
-from to_do.db import Database
-from to_do import __app_name__, __version__, SUCCESS, ERRORS, ERROR
+from to_do import __app_name__, __version__, SUCCESS, ERRORS, ERROR, console
 
-custom_theme = Theme({"info": "dim cyan", "warning": "magenta", "danger": "bold red"})
 
-console = Console(theme=custom_theme)
 app = typer.Typer()
 
 
 def _version_callback(value):
     if value:
-        console.print(f"{__app_name__} v{__version__}f")
+        console.print(f"{__app_name__} v{__version__}", style="info")
         raise typer.Exit(0)
 
 
@@ -34,14 +29,27 @@ def _parser_date(value):
             print(date)
             return date
         except ValueError as error:
-            console.log(
-                ":loudly_crying_face: the format has to be DD/MM/YYYY", style="danger"
+            console.print(
+                "Error : :loudly_crying_face: the format has to be DD/MM/YYYY",
+                style="danger",
             )
             raise typer.Exit(1) from error
 
 
+def display_table(data):
+    """This function display a table with the data"""
+    keys = data[0].keys()
+    table = Table(title="To Do")
+    for key in keys:
+        table.add_column(key)
+    for row in data:
+        table.add_row(*[str(row[key]) for key in keys])
+
+    console.print(table)
+
+
 @app.callback()
-def callback(
+def main(
     context: typer.Context,
     version: Optional[bool] = typer.Option(
         None,
@@ -52,10 +60,11 @@ def callback(
         is_eager=True,
     ),
 ):
-    """This function is call before any command"""
-    context.obj = Database()
-    if version:
-        console.print(f"{__app_name__} v{__version__}")
+    """
+    This function is always executed before any other command
+    For this application we only want to show the version
+    """
+    pass
 
 
 @app.command()
@@ -76,13 +85,32 @@ def show():
             ":sad_but_relieved_face: No Data Found :sad_but_relieved_face:",
             style="waring",
         )
-    keys = data[0].keys()
-    table = Table(title="To Do")
-    for key in keys:
-        table.add_column(key)
-    for row in data:
-        table.add_row(*[str(row[key]) for key in keys])
-    console.print(table)
+    else:
+        display_table(data)
+
+
+@app.command()
+def search(
+    query: str = typer.Argument(
+        ...,
+        help="search by a patter on the name",
+    )
+):
+    """This command search a to do by a patter on the name"""
+    if query == "":
+        console.log("no patter to search", style="warning")
+        raise typer.Exit(1)
+
+    todo = ToDo()
+    sql_query = f"name LIKE '%{query}%'"
+    data = todo.filter(sql_query)
+    if data == []:
+        console.print(f"No To Do found with the patter {query}", style="warning")
+        return SUCCESS
+    else:
+        display_table(data)
+
+    return SUCCESS
 
 
 @app.command()

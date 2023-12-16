@@ -1,18 +1,19 @@
 """
     This module contains the Database class that is used to interact with the
 """
-
+# libraries
+import os
 import sqlite3
 
 # local
-from to_do import DB_ERROR, SUCCESS
+from to_do import DB_ERROR, SUCCESS, console
 
 
 class Database:
     """sqlite3 database class that contains the To Do"""
 
-    __DB_LOCATION = "./to_do/to_do.db"
-    __SCHEMA_LOCATION = "./to_do/schema.sql"
+    __db_location = os.path.join(os.path.dirname(__file__), "to_do.db")
+    __schema_location = os.path.join(os.path.dirname(__file__), "schema.sql")
 
     def __init__(self, path_db=None):
         if path_db is not None:
@@ -21,7 +22,7 @@ class Database:
             )
         else:
             self.__db_connection = sqlite3.connect(
-                self.__DB_LOCATION,
+                self.__db_location,
                 detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
             )
         self.__db_connection.row_factory = sqlite3.Row
@@ -33,8 +34,8 @@ class Database:
     def query(self, sql, data=None, all_data=True):
         """
         Execute a query and return the all results or single result
-        all = True: return all results
-        all = False: return single result
+        all_data = True: return all results
+        all_data = False: return single result
         """
 
         if data is not None:
@@ -44,8 +45,8 @@ class Database:
 
         if all_data:
             return self.cursor.fetchall()
-        else:
-            return self.cursor.fetchone()
+
+        return self.cursor.fetchone()
 
     def insert(self, sql, data):
         """
@@ -57,7 +58,10 @@ class Database:
                 return DB_ERROR
             return SUCCESS
         except sqlite3.OperationalError as error:
-            print(error.args)
+            console.log(
+                f":sad_but_relieved_face: Error: {error} :sad_but_relieved_face:",
+                style="danger",
+            )
             return DB_ERROR
 
     def insert_many(self, sql, data):
@@ -68,6 +72,9 @@ class Database:
         return self.cursor.rowcount
 
     def execute(self, sql):
+        """
+        Execute sql statement
+        """
         self.cursor.execute(sql)
         result = self.cursor.rowcount
         if result == -1:
@@ -80,7 +87,7 @@ class Database:
         Create the schema of the database
         base on the schema.sql file
         """
-        with open(self.__SCHEMA_LOCATION) as f:
+        with open(self.__schema_location, "r", encoding="utf-8") as f:
             self.cursor.executescript(f.read())
 
     def commit(self):
