@@ -36,7 +36,7 @@ def _parser_date(value):
             raise typer.Exit(1) from error
 
 
-def display_table(data):
+def _display_table(data):
     """This function display a table with the data"""
     keys = data[0].keys()
     table = Table(title="To Do")
@@ -86,7 +86,7 @@ def show():
             style="waring",
         )
     else:
-        display_table(data)
+        _display_table(data)
 
 
 @app.command()
@@ -108,7 +108,7 @@ def search(
         console.print(f"No To Do found with the patter {query}", style="warning")
         return SUCCESS
     else:
-        display_table(data)
+        _display_table(data)
 
     return SUCCESS
 
